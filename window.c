@@ -3,9 +3,12 @@
 */
 
 #include <windows.h>
+#include <stdio.h>
+#include <string.h>
 
 #include "Painter.h"
 #include "window.h"
+#include "drawing.h"
 
 
 // имя Этой программы
@@ -63,23 +66,37 @@ int CreateWindowStructure (HINSTANCE hInstance, int iCmdShow)
 
     // создаем главное окно
     hwnd = CreateWindowEx(0,
-                szAppName,               // window class name
-                szAppName,               // window caption
-                WS_OVERLAPPEDWINDOW,     // window style
-                CW_USEDEFAULT,           // initial x position
-                CW_USEDEFAULT,           // initial y position
-                CW_USEDEFAULT,           // initial x size
-                CW_USEDEFAULT,           // initial y size
-                NULL,                    // parent window handle
-                NULL,                    // window menu handle
-                hInstance,               // program instance handle
-                NULL);                   // creation parameters
+                szAppName,              // window class name
+                szAppName,              // window caption
+                WS_OVERLAPPEDWINDOW,    // window style
+                CW_USEDEFAULT,          // initial x position
+                CW_USEDEFAULT,          // initial y position
+                CW_USEDEFAULT,          // initial x size
+                CW_USEDEFAULT,          // initial y size
+                NULL,                   // parent window handle
+                NULL,                   // window menu handle
+                hInstance,              // program instance handle
+                NULL);                  // creation parameters
 
+
+    // RECT winRect;
+    // GetClientRect(hwnd, &winRect);
+    // FrameInfo frameInfo = getFrameInfo(X_FROM, X_TO, Y_FROM, Y_TO, winRect);
+    // TCHAR info[300] = { 0 };
+    // tsprintf(info, 300, TEXT("meas: (%f %f), (%f %f)\npix: (%d %d), (%d %d)\ncent: (%d %d)\n\
+    //     pix in meas: %f\nwind size: (%d %d)"), 
+    //     frameInfo.topLeftMeas.X, frameInfo.topLeftMeas.Y, 
+    //     frameInfo.bottomRightMeas.X, frameInfo.bottomRightMeas.Y, 
+    //     frameInfo.topLeftPix.X, frameInfo.topLeftPix.Y, 
+    //     frameInfo.bottomRightPix.X, frameInfo.bottomRightPix.Y, 
+    //     frameInfo.centerPix.X, frameInfo.centerPix.Y, 
+    //     frameInfo.numPixInMeas, 
+    //     winRect.right - winRect.left, winRect.bottom - winRect.top);
 
     // HWND hwndStat1 = CreateWindowEx(0,
-    //             TEXT("STATIC"), TEXT("Устройство:"),
+    //             TEXT("STATIC"), info,
     //             WS_CHILD | WS_VISIBLE | SS_RIGHT,
-    //             20, 40, 100, 30,
+    //             5, 5, 300, 100,
     //             hwnd, NULL, hInstance, NULL);
     // SetParent(hwndStat1, hwnd);
 
@@ -96,7 +113,7 @@ void DestroyWindowStructure (void)
 {
 }
 
-
+void drawLines(HDC hdc);
 
 // обработчик сообщений
 static LRESULT CALLBACK WndProc (HWND lhwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
@@ -107,20 +124,12 @@ static LRESULT CALLBACK WndProc (HWND lhwnd, UINT iMsg, WPARAM wParam, LPARAM lP
         PAINTSTRUCT ps;
 
         case WM_PAINT:
-
             hdc = BeginPaint(hwnd, &ps);
-
-            MoveToEx(hdc, 50, 50, NULL);
-            LineTo(hdc, 250, 50);
-
-            HPEN hWhitePen = GetStockObject(WHITE_PEN);
-            HPEN hOldPen = SelectObject(hdc, hWhitePen);
-
-            MoveToEx(hdc, 50, 100, NULL);
-            LineTo(hdc, 250, 100);
-
-            SelectObject(hdc, hOldPen);
-
+            RECT winRect;
+            GetClientRect(hwnd, &winRect);
+            FrameInfo frameInfo = getFrameInfo(X_FROM, X_TO, Y_FROM, Y_TO, winRect);
+            drawFrame(hdc, frameInfo, RGB(0, 255, 0));
+            drawAxes(hdc, frameInfo, RGB(255, 0, 0));
             EndPaint(hwnd, &ps);
             break;
 
@@ -139,3 +148,17 @@ static LRESULT CALLBACK WndProc (HWND lhwnd, UINT iMsg, WPARAM wParam, LPARAM lP
     return DefWindowProc(lhwnd, iMsg, wParam, lParam);
 }
 
+void drawLines(HDC hdc)
+{
+    MoveToEx(hdc, 50, 50, NULL);
+    LineTo(hdc, 250, 50);
+
+    HPEN hWhitePen = GetStockObject(WHITE_PEN);
+    HPEN hRedPen = CreatePen(PS_SOLID, 1, RGB(255, 0, 0));
+    HPEN hOldPen = SelectObject(hdc, hRedPen);
+
+    MoveToEx(hdc, 50, 100, NULL);
+    LineTo(hdc, 250, 100);
+
+    SelectObject(hdc, hOldPen);
+}

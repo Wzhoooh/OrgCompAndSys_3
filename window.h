@@ -1,4 +1,3 @@
-
 int MsgBoxError (const TCHAR *str);
 int MsgBoxInfo (const TCHAR *str);
 
