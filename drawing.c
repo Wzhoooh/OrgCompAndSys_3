@@ -3,6 +3,10 @@
 
 #include "drawing.h"
 
+double func(double x)
+{
+    return pow(cos(x / 0.5), 2.0) + pow(x, 0.5);
+}
 
 double getNumPixInMeas(double xFrameFrom, double xFrameTo, double yFrameFrom, double yFrameTo, RECT winRect)
 {
@@ -58,11 +62,19 @@ FrameInfo getFrameInfo(double xFrameFrom, double xFrameTo, double yFrameFrom, do
     return info;
 }
 
-COORDInt getCoord(COORDDouble coord, FrameInfo info)
+COORDInt getPixCoord(COORDDouble coord, FrameInfo info)
 {
     COORDInt res;
     res.X = info.centerPix.X + coord.X * info.numPixInMeas;
     res.Y = info.centerPix.Y - coord.Y * info.numPixInMeas;
+    return res;
+}
+
+COORDDouble getMeasCoord(COORDInt coord, FrameInfo info)
+{
+    COORDDouble res;
+    res.X = (double)(coord.X - info.centerPix.X) / info.numPixInMeas;
+    res.Y = (double)(info.centerPix.Y - coord.Y) / info.numPixInMeas;
     return res;
 }
 
@@ -121,7 +133,7 @@ HPEN drawAxes(HDC hdc, FrameInfo info, COLORREF pen)
             {
                 COORDDouble markVal = { 0, 
                     0.0 + (info.topLeftMeas.Y - info.bottomRightMeas.Y) / Y_NUM_MARKS * i };
-                COORDInt point = getCoord(markVal, info);
+                COORDInt point = getPixCoord(markVal, info);
                 if (isFitIntoFrame(point, info))
                     drawMarkOnY(hdc, point, markVal.Y, pen);
             }
@@ -130,7 +142,7 @@ HPEN drawAxes(HDC hdc, FrameInfo info, COLORREF pen)
             {
                 COORDDouble markVal = { 0.0, 
                     0.0 - (info.topLeftMeas.Y - info.bottomRightMeas.Y) / Y_NUM_MARKS * i};
-                COORDInt point = getCoord(markVal, info);
+                COORDInt point = getPixCoord(markVal, info);
                 if (isFitIntoFrame(point, info))
                     drawMarkOnY(hdc, point, markVal.Y, pen);
             }
@@ -140,7 +152,7 @@ HPEN drawAxes(HDC hdc, FrameInfo info, COLORREF pen)
             {
                 COORDDouble markVal = { 0.0, 
                     info.bottomRightMeas.Y + (info.topLeftMeas.Y - info.bottomRightMeas.Y) / Y_NUM_MARKS * i };
-                COORDInt point = getCoord(markVal, info);
+                COORDInt point = getPixCoord(markVal, info);
                 if (isFitIntoFrame(point, info))
                     drawMarkOnY(hdc, point, markVal.Y, pen);
             }
@@ -164,7 +176,7 @@ HPEN drawAxes(HDC hdc, FrameInfo info, COLORREF pen)
             {
                 COORDDouble markVal = { 
                     0.0 + (info.bottomRightMeas.X - info.topLeftMeas.X) / X_NUM_MARKS * i, 0.0 };
-                COORDInt point = getCoord(markVal, info);
+                COORDInt point = getPixCoord(markVal, info);
                 if (isFitIntoFrame(point, info))
                     drawMarkOnX(hdc, point, markVal.X, pen);
             }
@@ -173,7 +185,7 @@ HPEN drawAxes(HDC hdc, FrameInfo info, COLORREF pen)
             {
                 COORDDouble markVal = { 
                     0.0 - (info.bottomRightMeas.X - info.topLeftMeas.X) / X_NUM_MARKS * i, 0.0 };
-                COORDInt point = getCoord(markVal, info);
+                COORDInt point = getPixCoord(markVal, info);
                 if (isFitIntoFrame(point, info))
                     drawMarkOnX(hdc, point, markVal.X, pen);
             }
@@ -183,7 +195,7 @@ HPEN drawAxes(HDC hdc, FrameInfo info, COLORREF pen)
             {
                 COORDDouble markVal = { 
                     info.topLeftMeas.X + (info.bottomRightMeas.X - info.topLeftMeas.X) / X_NUM_MARKS * i, 0 };
-                COORDInt point = getCoord(markVal, info);
+                COORDInt point = getPixCoord(markVal, info);
                 if (isFitIntoFrame(point, info))
                     drawMarkOnX(hdc, point, markVal.X, pen);
             }
@@ -227,4 +239,51 @@ HPEN drawMarkOnY(HDC hdc, COORDInt coord, double val, COLORREF pen)
     TextOut(hdc, to.X + 1, to.Y, sVal, tstrlen(sVal));
 
     return hOldPen;
+}
+
+HPEN drawGraph(HDC hdc, double (*func)(double), FrameInfo info, COLORREF pen)
+{
+    HPEN hPen = CreatePen(PS_SOLID, 1, pen);
+    HPEN hOldPen = SelectObject(hdc, hPen);
+
+    COORDInt prev = { -1, -1 };
+    for (int i = info.topLeftPix.X; i <= info.bottomRightPix.X; i++)
+    {
+        COORDInt xPix = { i, info.centerPix.Y };
+        COORDDouble xMeas = getMeasCoord(xPix, info);
+        COORDDouble yMeas = { xMeas.X, func(xMeas.X) };
+        COORDInt yPix = getPixCoord(yMeas, info);
+        if (isFitIntoFrame(yPix, info))
+        {
+            if (prev.X != -1)
+            {
+                MoveToEx(hdc, prev.X, prev.Y, NULL);
+                LineTo(hdc, yPix.X, yPix.Y);
+            }
+            prev.X = yPix.X;
+            prev.Y = yPix.Y;
+        }
+        else
+        {
+            prev.X = -1;
+            prev.Y = -1;
+        }
+    }
+
+    return hOldPen;
+}
+
+COORDDouble findMaxPoint(double (*func)(double), FrameInfo info)
+{
+    COORDDouble maxPoint = { -1, pow(10.0, -305.0) };
+    for (double x = info.topLeftMeas.X; x <= info.bottomRightMeas.X; x += STEP_SIZE)
+    {
+        double y = func(x);
+        if (y <= info.topLeftMeas.Y && y > maxPoint.Y)
+        {
+            maxPoint.X = x;
+            maxPoint.Y = y;
+        }
+    }
+    return maxPoint;
 }

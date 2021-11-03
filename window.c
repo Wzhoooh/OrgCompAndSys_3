@@ -128,8 +128,16 @@ static LRESULT CALLBACK WndProc (HWND lhwnd, UINT iMsg, WPARAM wParam, LPARAM lP
             RECT winRect;
             GetClientRect(hwnd, &winRect);
             FrameInfo frameInfo = getFrameInfo(X_FROM, X_TO, Y_FROM, Y_TO, winRect);
-            drawFrame(hdc, frameInfo, RGB(0, 255, 0));
+            // drawFrame(hdc, frameInfo, RGB(0, 255, 0));
             drawAxes(hdc, frameInfo, RGB(255, 0, 0));
+            drawGraph(hdc, func, frameInfo, RGB(0, 0, 255));
+            TCHAR sVal[100] = { 0 };
+            COORDDouble maxPoint = findMaxPoint(func, frameInfo);
+            tsprintf(sVal, 100, TEXT("Максимальное значение на промежутке [%.3f, %.3f] равно %.3f в точке %.3f"), 
+                frameInfo.topLeftMeas.X, frameInfo.bottomRightMeas.X, 
+                maxPoint.Y, maxPoint.X);
+            SetBkMode(hdc, TRANSPARENT);
+            TextOut(hdc, 5, 5, sVal, tstrlen(sVal));
             EndPaint(hwnd, &ps);
             break;
 
