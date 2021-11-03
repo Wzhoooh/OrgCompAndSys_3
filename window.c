@@ -19,6 +19,8 @@ static LRESULT CALLBACK WndProc (HWND, UINT, WPARAM, LPARAM);
 
 // основное окно
 static HWND hwnd = NULL;
+// окно с максимальным значением
+static HWND hwndDesc = NULL;
 
 
 // интерфейс к сообщению об ошибке
@@ -78,31 +80,22 @@ int CreateWindowStructure (HINSTANCE hInstance, int iCmdShow)
                 hInstance,              // program instance handle
                 NULL);                  // creation parameters
 
-
-    // RECT winRect;
-    // GetClientRect(hwnd, &winRect);
-    // FrameInfo frameInfo = getFrameInfo(X_FROM, X_TO, Y_FROM, Y_TO, winRect);
-    // TCHAR info[300] = { 0 };
-    // tsprintf(info, 300, TEXT("meas: (%f %f), (%f %f)\npix: (%d %d), (%d %d)\ncent: (%d %d)\n\
-    //     pix in meas: %f\nwind size: (%d %d)"), 
-    //     frameInfo.topLeftMeas.X, frameInfo.topLeftMeas.Y, 
-    //     frameInfo.bottomRightMeas.X, frameInfo.bottomRightMeas.Y, 
-    //     frameInfo.topLeftPix.X, frameInfo.topLeftPix.Y, 
-    //     frameInfo.bottomRightPix.X, frameInfo.bottomRightPix.Y, 
-    //     frameInfo.centerPix.X, frameInfo.centerPix.Y, 
-    //     frameInfo.numPixInMeas, 
-    //     winRect.right - winRect.left, winRect.bottom - winRect.top);
-
-    // HWND hwndStat1 = CreateWindowEx(0,
-    //             TEXT("STATIC"), info,
-    //             WS_CHILD | WS_VISIBLE | SS_RIGHT,
-    //             5, 5, 300, 100,
-    //             hwnd, NULL, hInstance, NULL);
-    // SetParent(hwndStat1, hwnd);
-
+    hwndDesc = CreateWindowEx(0,
+                szAppName,              // window class name
+                szAppName,              // window caption
+                WS_OVERLAPPEDWINDOW,    // window style
+                CW_USEDEFAULT,          // initial x position
+                CW_USEDEFAULT,          // initial y position
+                800,                    // initial x size
+                80,                     // initial y size
+                NULL,                   // parent window handle
+                NULL,                   // window menu handle
+                hInstance,              // program instance handle
+                NULL);                  // creation parameters
 
     // показываем созданную структуру окон
     ShowWindow(hwnd, iCmdShow);
+    ShowWindow(hwndDesc, iCmdShow);
 
     return 0;
 }
@@ -122,6 +115,8 @@ static LRESULT CALLBACK WndProc (HWND lhwnd, UINT iMsg, WPARAM wParam, LPARAM lP
     {
         HDC hdc;
         PAINTSTRUCT ps;
+        HDC hdcDesc;
+        PAINTSTRUCT psDesc;
 
         case WM_PAINT:
             hdc = BeginPaint(hwnd, &ps);
@@ -131,14 +126,17 @@ static LRESULT CALLBACK WndProc (HWND lhwnd, UINT iMsg, WPARAM wParam, LPARAM lP
             // drawFrame(hdc, frameInfo, RGB(0, 255, 0));
             drawAxes(hdc, frameInfo, RGB(255, 0, 0));
             drawGraph(hdc, func, frameInfo, RGB(0, 0, 255));
-            TCHAR sVal[100] = { 0 };
+            EndPaint(hwnd, &ps);
+
+            hdc = BeginPaint(hwndDesc, &ps);
+            TCHAR sVal[200] = { 0 };
             COORDDouble maxPoint = findMaxPoint(func, frameInfo);
-            tsprintf(sVal, 100, TEXT("Максимальное значение на промежутке [%.3f, %.3f] равно %.3f в точке %.3f"), 
+            tsprintf(sVal, 200, TEXT("Максимальное значение функции на промежутке [%.3f, %.3f] равно %.3f в точке %.3f"), 
                 frameInfo.topLeftMeas.X, frameInfo.bottomRightMeas.X, 
                 maxPoint.Y, maxPoint.X);
             SetBkMode(hdc, TRANSPARENT);
             TextOut(hdc, 5, 5, sVal, tstrlen(sVal));
-            EndPaint(hwnd, &ps);
+            EndPaint(hwndDesc, &ps);
             break;
 
         case WM_QUIT:  // Indicates a request to terminate an application, and is generated when the application calls the PostQuitMessage function. This message causes the GetMessage function to return zero.
