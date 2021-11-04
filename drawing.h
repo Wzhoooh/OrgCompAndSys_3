@@ -11,15 +11,18 @@
 
 #define MAX_COVERAGE 0.95
 
-#define X_FROM -1 // 3.0 * M_PI / 2.0
+#define X_FROM 3.0 * M_PI / 2.0
 #define X_TO 18.0 * M_PI
-#define Y_FROM -1
+#define Y_FROM -5
 #define Y_TO 10
 
-#define X_NUM_MARKS 10
+#define Y_AXIS_COORD 40
+
+#define X_NUM_MARKS 20
 #define Y_NUM_MARKS 7
 
-#define STEP_SIZE 0.0001
+// for calculating of max function value
+#define STEP_SIZE 0.001
 
 typedef struct
 {
@@ -53,7 +56,7 @@ COORDDouble getMeasCoord(COORDInt coord, FrameInfo info);
 BOOL isFitIntoFrame(COORDInt coord, FrameInfo info);
 
 HPEN drawFrame(HDC hdc, FrameInfo info, COLORREF pen);
-HPEN drawAxes(HDC hdc, FrameInfo info, COLORREF pen);
+HPEN drawAxes(HDC hdc, double yAxis, FrameInfo info, COLORREF pen);
 HPEN drawMarkOnX(HDC hdc, COORDInt coord, double val, COLORREF pen);
 HPEN drawMarkOnY(HDC hdc, COORDInt coord, double val, COLORREF pen);
 HPEN drawGraph(HDC hdc, double (*func)(double), FrameInfo info, COLORREF pen);

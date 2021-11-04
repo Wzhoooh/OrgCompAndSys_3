@@ -124,7 +124,7 @@ static LRESULT CALLBACK WndProc (HWND lhwnd, UINT iMsg, WPARAM wParam, LPARAM lP
             GetClientRect(hwnd, &winRect);
             FrameInfo frameInfo = getFrameInfo(X_FROM, X_TO, Y_FROM, Y_TO, winRect);
             // drawFrame(hdc, frameInfo, RGB(0, 255, 0));
-            drawAxes(hdc, frameInfo, RGB(255, 0, 0));
+            drawAxes(hdc, Y_AXIS_COORD, frameInfo, RGB(255, 0, 0));
             drawGraph(hdc, func, frameInfo, RGB(0, 0, 255));
             EndPaint(hwnd, &ps);
 
@@ -137,7 +137,7 @@ static LRESULT CALLBACK WndProc (HWND lhwnd, UINT iMsg, WPARAM wParam, LPARAM lP
             SetBkMode(hdc, TRANSPARENT);
             TextOut(hdc, 5, 5, sVal, tstrlen(sVal));
             EndPaint(hwndDesc, &ps);
-            break;
+            return 0;
 
         case WM_QUIT:  // Indicates a request to terminate an application, and is generated when the application calls the PostQuitMessage function. This message causes the GetMessage function to return zero.
             // это сообщение, посланное любому нашему окну завершает жизнь программы

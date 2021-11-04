@@ -104,7 +104,7 @@ HPEN drawFrame(HDC hdc, FrameInfo info, COLORREF pen)
     return hOldPen;
 }
 
-HPEN drawAxes(HDC hdc, FrameInfo info, COLORREF pen)
+HPEN drawAxes(HDC hdc, double yAxis, FrameInfo info, COLORREF pen)
 {
     double xLength = info.bottomRightMeas.X - info.topLeftMeas.X;
     double yLength = info.topLeftMeas.Y - info.bottomRightMeas.Y;
@@ -112,16 +112,18 @@ HPEN drawAxes(HDC hdc, FrameInfo info, COLORREF pen)
     HPEN hPen = CreatePen(PS_SOLID, 1, pen);
     HPEN hOldPen = SelectObject(hdc, hPen);
 
-    // vertical line
-    COORDInt verticPoint = { info.centerPix.X, info.topLeftPix.Y };
+    COORDDouble verticPointMeas = { yAxis, 0};
+    COORDInt newCenter = getPixCoord(verticPointMeas, info);
+    COORDInt verticPoint = { newCenter.X, info.topLeftPix.Y };
     COORDInt horizPoint = { info.topLeftPix.X, info.centerPix.Y };
+    // vertical line
     if (isFitIntoFrame(verticPoint, info))
     {
-        MoveToEx(hdc, info.centerPix.X, info.topLeftPix.Y, NULL);
-        LineTo(hdc, info.centerPix.X, info.bottomRightPix.Y);
+        MoveToEx(hdc, newCenter.X, info.topLeftPix.Y, NULL);
+        LineTo(hdc, newCenter.X, info.bottomRightPix.Y);
 
         // marks
-        if (isFitIntoFrame(info.centerPix, info))
+        if (isFitIntoFrame(newCenter, info))
         {
             int numMarksInTopPart = Y_NUM_MARKS * 
                 (info.topLeftMeas.Y - 0.0) / (info.topLeftMeas.Y - info.bottomRightMeas.Y);
@@ -131,7 +133,7 @@ HPEN drawAxes(HDC hdc, FrameInfo info, COLORREF pen)
             // drawing in right part
             for (int i = 1; i <= numMarksInTopPart; i++)
             {
-                COORDDouble markVal = { 0, 
+                COORDDouble markVal = { yAxis, 
                     0.0 + (info.topLeftMeas.Y - info.bottomRightMeas.Y) / Y_NUM_MARKS * i };
                 COORDInt point = getPixCoord(markVal, info);
                 if (isFitIntoFrame(point, info))
@@ -140,7 +142,7 @@ HPEN drawAxes(HDC hdc, FrameInfo info, COLORREF pen)
             // drawing in left part
             for (int i = 1; i <= numMarksInBottomPart; i++)
             {
-                COORDDouble markVal = { 0.0, 
+                COORDDouble markVal = { yAxis, 
                     0.0 - (info.topLeftMeas.Y - info.bottomRightMeas.Y) / Y_NUM_MARKS * i};
                 COORDInt point = getPixCoord(markVal, info);
                 if (isFitIntoFrame(point, info))
@@ -150,7 +152,7 @@ HPEN drawAxes(HDC hdc, FrameInfo info, COLORREF pen)
         else
             for (int i = 0; i < Y_NUM_MARKS; i++)
             {
-                COORDDouble markVal = { 0.0, 
+                COORDDouble markVal = { yAxis, 
                     info.bottomRightMeas.Y + (info.topLeftMeas.Y - info.bottomRightMeas.Y) / Y_NUM_MARKS * i };
                 COORDInt point = getPixCoord(markVal, info);
                 if (isFitIntoFrame(point, info))
@@ -160,22 +162,22 @@ HPEN drawAxes(HDC hdc, FrameInfo info, COLORREF pen)
     // horizontal line
     if (isFitIntoFrame(horizPoint, info))
     {
-        MoveToEx(hdc, info.topLeftPix.X, info.centerPix.Y, NULL);
-        LineTo(hdc, info.bottomRightPix.X, info.centerPix.Y);
+        MoveToEx(hdc, info.topLeftPix.X, newCenter.Y, NULL);
+        LineTo(hdc, info.bottomRightPix.X, newCenter.Y);
 
         // marks
-        if (isFitIntoFrame(info.centerPix, info))
+        if (isFitIntoFrame(newCenter, info))
         {
             int numMarksInRightPart = X_NUM_MARKS * 
-                (info.bottomRightMeas.X - 0.0) / (info.bottomRightMeas.X - info.topLeftMeas.X);
+                (info.bottomRightMeas.X - yAxis) / (info.bottomRightMeas.X - info.topLeftMeas.X);
             int numMarksInLeftPart = X_NUM_MARKS * 
-                (0.0 - info.topLeftMeas.X) / (info.bottomRightMeas.X - info.topLeftMeas.X);
+                (yAxis - info.topLeftMeas.X) / (info.bottomRightMeas.X - info.topLeftMeas.X);
             
             // drawing in right part
             for (int i = 0; i <= numMarksInRightPart; i++)
             {
                 COORDDouble markVal = { 
-                    0.0 + (info.bottomRightMeas.X - info.topLeftMeas.X) / X_NUM_MARKS * i, 0.0 };
+                    yAxis + (info.bottomRightMeas.X - info.topLeftMeas.X) / X_NUM_MARKS * i, 0.0 };
                 COORDInt point = getPixCoord(markVal, info);
                 if (isFitIntoFrame(point, info))
                     drawMarkOnX(hdc, point, markVal.X, pen);
@@ -184,7 +186,7 @@ HPEN drawAxes(HDC hdc, FrameInfo info, COLORREF pen)
             for (int i = 1; i <= numMarksInLeftPart; i++)
             {
                 COORDDouble markVal = { 
-                    0.0 - (info.bottomRightMeas.X - info.topLeftMeas.X) / X_NUM_MARKS * i, 0.0 };
+                    yAxis - (info.bottomRightMeas.X - info.topLeftMeas.X) / X_NUM_MARKS * i, 0.0 };
                 COORDInt point = getPixCoord(markVal, info);
                 if (isFitIntoFrame(point, info))
                     drawMarkOnX(hdc, point, markVal.X, pen);
@@ -236,7 +238,7 @@ HPEN drawMarkOnY(HDC hdc, COORDInt coord, double val, COLORREF pen)
     TCHAR sVal[10] = { 0 };
     tsprintf(sVal, 10, TEXT("%.1f"), val);
     SetBkMode(hdc, TRANSPARENT);
-    TextOut(hdc, to.X + 1, to.Y, sVal, tstrlen(sVal));
+    TextOut(hdc, to.X + 1, to.Y - 5, sVal, tstrlen(sVal));
 
     return hOldPen;
 }
